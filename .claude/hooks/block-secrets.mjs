@@ -117,7 +117,9 @@ export function decide(payload, env) {
   if (!content) return null;
   const path = text(input, 'file_path') || text(input, 'notebook_path');
   const absolute = resolve(env.projectDir, path);
-  const inside = relative(env.projectDir, absolute);
+  // Normalize to forward slashes so the hook's output matches git on every OS
+  // (path.relative returns backslashes on Windows).
+  const inside = relative(env.projectDir, absolute).replace(/\\/g, '/');
   if (inside.startsWith('..') || isAbsolute(inside)) return null;
   if (env.isIgnored(absolute)) return null;
 

@@ -5,12 +5,11 @@
 import { createBus } from './events.js';
 import { installPuddle } from './features/puddle.js';
 import { createGame } from './game.js';
-import { createKeyboard } from './input.js';
-import { attachKeyboard } from './input-dom.js';
 import { backingSize, createRenderer } from './render.js';
 import { parseSeed } from './rng.js';
 import { createMemoryStore, createStorageStore } from './store.js';
 import type { HighScoreStore } from './types.js';
+import { wireKeyboard } from './wire-keyboard.js';
 
 /** The one localStorage key the game owns (architecture section 3). */
 const HI_STORAGE_KEY = 'dino.hi';
@@ -94,15 +93,10 @@ fitCanvas(canvas);
 const renderer = createRenderer(canvas);
 // Cosmetic features plug in from outside the game loop (architecture 2.2).
 installPuddle({ game, renderer });
-// Each run gets a fresh keyboard, so a key still held from the crash does not
-// count as already pressed in the next run.
-function bindKeyboard(): void {
-  attachKeyboard(window, createKeyboard(), (intent) => {
-    game.dispatch(intent);
-  });
-}
-bindKeyboard();
-game.on('restart', bindKeyboard);
+// Keyboard is attached once per page; `wireKeyboard` resets held keys on
+// restart so a key still held from the crash does not count as already
+// pressed in the next run (architecture 2.2 Input model).
+wireKeyboard(window, game);
 
 // 5. Read-only hook for end-to-end tests. Frozen so page code cannot replace it.
 window.__dino = Object.freeze({

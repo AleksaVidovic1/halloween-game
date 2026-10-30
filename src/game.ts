@@ -155,6 +155,8 @@ function freshRun(seed: number, previous: RunState): RunState {
   return {
     ...previous,
     phase: 'running',
+    tick: 0,
+    speed: START_SPEED,
     seed,
     scrollX: 0,
     distance: 0,
@@ -480,9 +482,11 @@ export function createGame(deps: GameDeps): Game {
   let accumulatorMs = 0;
 
   function advance(): void {
-    // Step 1: at most one queued intent per step, oldest first; the queue
-    // waits while the dino is in the air.
+    // Step 1: at most one queued intent per step, oldest first; the rest are
+    // dropped (architecture 2.2 Input model). The queue skips the ground
+    // consumption while the dino is in the air.
     const intent = isAirborne(run) ? undefined : queue.shift();
+    queue.length = 0;
     const result = step(run, intent, stepDeps);
     // Commit first, so a listener calling state() sees the post-step run.
     run = result.run;

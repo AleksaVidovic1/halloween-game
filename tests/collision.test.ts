@@ -106,6 +106,17 @@ describe('hasCollision', () => {
     expect(hasCollision(dino, obstacles)).toBe(true);
   });
 
+  it('is false when sprite rects overlap but hitboxes are disjoint (near miss)', () => {
+    // Dino sprite at DINO_X=50 spans x [50, 94); its hitbox is inset to [62, 84).
+    // A small cactus at x=40 spans sprite x [40, 57) and hitbox x [42, 55).
+    // The sprite rects overlap on x [50, 57); the hitboxes are disjoint on x.
+    const dino = groundDino();
+    const cactus = smallCactus(40);
+    expect(intersects(dino, cactus)).toBe(true);
+    expect(intersects(dino.hitbox, cactus.hitbox)).toBe(false);
+    expect(hasCollision(dino, [cactus])).toBe(false);
+  });
+
   it('is false when the dino is airborne above a cactus', () => {
     const ground = groundDino();
     const lift = 60;

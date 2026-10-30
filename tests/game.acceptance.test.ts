@@ -294,6 +294,26 @@ describe('2.2 jumping', () => {
     expect(pressed.state()).toEqual(control.state());
   });
 
+  it('drops extra primaries queued on the ground: no late jump after landing', () => {
+    // A double-tap in one frame queues two primaries while the dino is still
+    // on the ground. Architecture 2.2 Input model: the next step consumes at
+    // most one `primary` and drops the rest. If the queue is not drained, the
+    // leftover primary fires as a second jump the step after landing.
+    const { game } = makeGame(1, { deps: { collisions: false } });
+    pressPrimary(game);
+    game.tick(1);
+    const jumps = collect(game, 'jump');
+    const lands = collect(game, 'land');
+
+    game.dispatch('primary');
+    game.dispatch('primary');
+
+    for (let i = 0; i < JUMP_DURATION_TICKS + 5; i += 1) game.tick();
+
+    expect(jumps).toHaveLength(1);
+    expect(lands).toHaveLength(1);
+  });
+
   it('is airborne, still running, with a constant run frame while in the air', () => {
     const game = startAndJump(1, RUN_FRAME_TICKS - 1);
     pressPrimary(game);
@@ -805,6 +825,13 @@ describe('2.7 restarting', () => {
     expect(s.dino.pose).toBe('run');
     expect(s.hud).toEqual({ hint: null, gameOver: false, blinkVisible: true });
     expect(events).toEqual([{ type: 'restart', seed: 9 }]);
+    // The restart step must reset tick, speed and scrollX to initial values
+    // (tech-considerations 2.4 step 1: tick = 0, speed = START_SPEED).
+    expect(dead.tick).toBeGreaterThan(0);
+    expect(dead.speed).toBeGreaterThan(START_SPEED);
+    expect(s.tick).toBe(0);
+    expect(s.speed).toBe(START_SPEED);
+    expect(s.scrollX).toBe(0);
   });
 
   it('draws exactly one new seed per restart', () => {
